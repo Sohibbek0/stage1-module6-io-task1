@@ -1,56 +1,60 @@
 package com.epam.mjc.io;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FileReader {
+
+    private static final Logger LOGGER = Logger.getLogger(FileReader.class.getName());
+
     public Profile getDataFromFile(File file) {
-        int Age ;
-        long Phone;
-        String Name;
-        String Email;
-        boolean wr = false;
-        int startRow =0;
-        int endRow=0;
-        FileInputStream fis = null;
-        char[] charr=null;
-        try {
-            charr = new char[(int) file.length()];
-            fis = new FileInputStream(file);
-            int ch =fis.read();
-            int i =0;
-            while(ch!=-1){
-                charr[i]=(char)ch;
-                ch=fis.read();
-                i++;
+        String name = null;
+        Integer age = null;
+        String email = null;
+        Long phone = null;
+
+        try (BufferedReader reader = new BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(": ");
+                if (parts.length == 2) {
+                    String key = parts[0].trim();
+                    String value = parts[1].trim();
+
+                    switch (key) {
+                        case "Name":
+                            name = value;
+                            break;
+                        case "Age":
+                            try {
+                                age = Integer.parseInt(value);
+                            } catch (NumberFormatException e) {
+                                LOGGER.log(Level.WARNING, "Ошибка преобразования возраста: " + e.getMessage());
+                            }
+                            break;
+                        case "Email":
+                            email = value;
+                            break;
+                        case "Phone":
+                            try {
+                                phone = Long.parseLong(value);
+                            } catch (NumberFormatException e) {
+                                LOGGER.log(Level.WARNING, "Ошибка преобразования телефона: " + e.getMessage());
+                            }
+                            break;
+                        default:
+                            LOGGER.log(Level.WARNING, "Неизвестный ключ: " + key);
+                            break;
+                    }
+                }
             }
-        } catch (FileNotFoundException e) {
-            System.out.println("filenotfound");
         } catch (IOException e) {
-            System.out.println("ioex");
+            LOGGER.log(Level.SEVERE, "Ошибка чтения файла: " + e.getMessage());
         }
-        String data = String.valueOf(charr);
-        Profile prof = new Profile();
-        String strAge = cut(data,"Age: ");
-        Email = cut(data,"Email: ");
-        String strPhone = cut(data,"Phone: ");
-        Name = cut(data,"Name: ");
-        Age = Integer.parseInt(strAge.trim());
-        Phone=Long.parseLong(strPhone.trim());
-        prof.setEmail(Email);
-        prof.setName(Name);
-        prof.setPhone(Phone);
-        prof.setAge(Age);
-        return prof;
-    }
-    public static String cut(String text, String find){
-        String answer="";
-        int start = text.indexOf(find);
-        text=text.substring(start,text.length());
-        start = text.indexOf(find);
-        int end = text.indexOf("\n");
-        if(start>-1)
-            answer =text.substring(start+find.length() ,end);
-        else
-            System.out.println("string not found");
-        return answer;
+
+        return new Profile(name, age, email, phone);
     }
 }
